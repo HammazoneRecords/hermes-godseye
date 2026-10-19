@@ -1,0 +1,4 @@
+ImportError while loading conftest '/work/fork2/tests/conftest.py'.
+tests/conftest.py:43: in <module>
+    from hermes_cli import version_info as _version_info
+E   ImportError: cannot import name 'version_info' from 'hermes_cli' (/work/fork2/hermes_cli/__init__.py)
