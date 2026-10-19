@@ -1,4 +1,37 @@
-node_modules/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+02_working_dashboard/godseye-v2/dist/
+02_working_dashboard/godseye-v2/.vite/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+bridge.log
+
+# Secrets (never commit — boundary compliance)
 .env
+.env.*
+*.key
+*.pem
+
+# Live snapshot noise — written every 5s by the bridge SnapshotWriter.
+# Original baseline dashboard.json is the contract; the live version is
+# regenerated from runtime state and should not be committed.
+02_working_dashboard/GODSEYE_DASHBOARD/data/dashboard.json
+
+# Proof artifacts (verification logs — committed separately as evidence, not here)
+proof/
+*.proof.json
