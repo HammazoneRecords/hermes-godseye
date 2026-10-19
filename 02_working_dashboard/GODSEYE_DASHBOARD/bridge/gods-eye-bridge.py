@@ -73,6 +73,11 @@ DEFAULT_PORT = 8765
 # Where to find Hermes. If unset, bridge runs in mock mode.
 HERMES_BASE_URL = os.environ.get("HERMES_BASE_URL", "")  # e.g. http://127.0.0.1:8642
 HERMES_API_KEY = os.environ.get("HERMES_API_KEY", os.environ.get("API_SERVER_KEY", ""))
+
+# Phase 4 — outbound control plane enable flag. DEFAULT OFF because control
+# actions touch the production Hermes runtime. Set GODS_EYE_CONTROL_ENABLED=1
+# to enable. See bridge/README.md for the full control endpoint contract.
+CONTROL_ENABLED = os.environ.get("GODS_EYE_CONTROL_ENABLED", "0") == "1"
 HERMES_DASHBOARD_WS = os.environ.get("HERMES_DASHBOARD_WS", "")  # e.g. ws://127.0.0.1:8643/api/ws
 HERMES_TRAJECTORY_PATH = os.environ.get(
     "HERMES_TRAJECTORY_PATH",
@@ -150,6 +155,7 @@ EVENT_TYPES = {
     "system.gateway_diagnostic":"Gateway diagnostic event",
     "cargo.transfer":          "Heavy file/deliverable transfer (artifacts API)",
     "memory.mutation":         "Memory layer pin/dump/compress (transform on memory_tool)",
+    "control.action":           "Phase 4 outbound control action executed (steer/stop/approval/fork/resolve-unknown)",
 }
 
 
@@ -952,7 +958,7 @@ async def sse_events_handler(request: web.Request) -> web.StreamResponse:
             agent_id="system", session_id="system", run_id="system",
             timestamp=time.time(), event_type="system.gateway_health",
             payload={"name": "gods-eye-bridge", "gateway_state": "ready",
-                     "active_agents": 0, "version": "1.6.0"},
+                     "active_agents": 0, "version": "1.7.0"},
         )
         await resp.write(hello.to_sse().encode("utf-8"))
         while True:
@@ -1016,7 +1022,7 @@ async def health_handler(request: web.Request) -> web.Response:
     return web.json_response({
         "ok": True,
         "service": "gods-eye-bridge",
-        "version": "1.6.0",
+        "version": "1.7.0",
         "hermes_base_url": HERMES_BASE_URL or "(mock mode)",
         "subscribers": len(request.app["bus"]._subs),
         "ring_size": len(request.app["bus"]._ring),
@@ -1033,19 +1039,50 @@ async def health_handler(request: web.Request) -> web.Response:
         },
         "trajectory_sessions": session_count,
         "mock_mode": mock_mode,
+        "control_enabled": request.app.get("control_enabled", False),
+        "control_actions": list(CONTROL_ACTION_CONTRACT.keys()),
     })
 
 
 async def control_handler(request: web.Request) -> web.Response:
-    """POST /api/gods-eye/control/{action} — Phase 4 only. Stub for now."""
+    """POST /api/gods-eye/control/{action} — Phase 4 outbound control plane.
+
+    Status codes:
+      200 — action executed successfully (or simulated in mock mode)
+      400 — invalid input (missing required field, bad enum value, oversized)
+      403 — control plane disabled (GODS_EYE_CONTROL_ENABLED not set to 1)
+      404 — unknown action (not in the 5 supported)
+      502 — upstream Hermes API error (live mode only)
+    """
     action = request.match_info["action"]
-    if action not in ("steer", "stop", "approval", "fork", "resolve-unknown"):
-        return web.json_response({"error": f"unknown action {action}"}, status=400)
-    return web.json_response({
-        "ok": False,
-        "reason": "Phase 4 — outbound control not yet implemented",
-        "action": action,
-    }, status=501)
+    if action not in CONTROL_ACTION_CONTRACT:
+        return web.json_response({
+            "ok": False, "error": f"unknown action '{action}'",
+            "supported": list(CONTROL_ACTION_CONTRACT.keys()),
+        }, status=404)
+    if not request.app.get("control_enabled", False):
+        return web.json_response({
+            "ok": False, "error": "control plane disabled",
+            "reason": "Set GODS_EYE_CONTROL_ENABLED=1 to enable. See bridge/README.md.",
+            "action": action,
+        }, status=403)
+    try:
+        body = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid JSON body", "action": action}, status=400)
+    if not isinstance(body, dict):
+        return web.json_response({"ok": False, "error": "body must be a JSON object", "action": action}, status=400)
+    err = _validate_control_input(action, body)
+    if err:
+        return web.json_response({"ok": False, "error": "validation failed", "action": action, **err}, status=400)
+    executor = request.app.get("control_executor")
+    if executor is None:
+        return web.json_response({"ok": False, "error": "control executor not initialized", "action": action}, status=500)
+    result = await executor.execute(action, body)
+    await executor.emit_audit_event(action, body, result)
+    if not result.get("ok"):
+        return web.json_response({"ok": False, "action": action, "upstream_error": result}, status=502)
+    return web.json_response({"ok": True, "action": action, "result": result, "audit_emitted": True}, status=200)
 
 
 # ---------------------------------------------------------------------------
@@ -1414,6 +1451,187 @@ async def trajectory_handler(request: web.Request) -> web.Response:
 
 
 # ---------------------------------------------------------------------------
+# Phase 4 — Outbound control plane
+# ---------------------------------------------------------------------------
+
+# Control action contract (per Hermes OpenAI-compatible API §2.2 of the
+# Phase 2 Cockpit Plan):
+#   steer            — POST a message to a running agent (inject a steer)
+#   stop             — Stop a running run
+#   approval         — Respond to an approval request (approve/deny)
+#   fork             — Fork a session into a new run
+#   resolve-unknown  — Resolve an unknown response
+#
+# Each action:
+#   1. Validates input (returns 400 on bad input)
+#   2. Executes against Hermes API in live mode (returns 502 on upstream error)
+#   3. Emits a control.action event on the SSE bus for audit trail
+#   4. Returns 200 + the action result on success
+#
+# The control plane is gated behind GODS_EYE_CONTROL_ENABLED=1 (default off).
+# When disabled, all control endpoints return 403 with a clear message.
+
+CONTROL_ACTION_CONTRACT = {
+    "steer": {
+        "required": ("run_id", "message"),
+        "optional": (),
+        "live_path": "/v1/runs/{run_id}/steer",
+        "live_method": "POST",
+    },
+    "stop": {
+        "required": ("run_id",),
+        "optional": ("reason",),
+        "live_path": "/v1/runs/{run_id}/stop",
+        "live_method": "POST",
+    },
+    "approval": {
+        "required": ("run_id", "approval_id", "decision"),
+        "optional": ("reason",),
+        "live_path": "/v1/runs/{run_id}/approval",
+        "live_method": "POST",
+        "enum": {"decision": ("approve", "deny", "defer")},
+    },
+    "fork": {
+        "required": ("session_id",),
+        "optional": ("message",),
+        "live_path": "/v1/runs",
+        "live_method": "POST",
+    },
+    "resolve-unknown": {
+        "required": ("run_id", "response"),
+        "optional": (),
+        "live_path": "/v1/runs/{run_id}/resolve-unknown",
+        "live_method": "POST",
+    },
+}
+
+
+def _validate_control_input(action: str, body: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Returns None if valid, or an error dict {field, msg} if invalid."""
+    contract = CONTROL_ACTION_CONTRACT[action]
+    for f in contract["required"]:
+        if f not in body or body[f] in (None, ""):
+            return {"field": f, "msg": f"required field '{f}' missing or empty"}
+    for f, allowed in contract.get("enum", {}).items():
+        if f in body and body[f] not in allowed:
+            return {"field": f, "msg": f"field '{f}' must be one of {list(allowed)}, got {body[f]!r}"}
+    if "message" in body and len(str(body["message"])) > 50000:
+        return {"field": "message", "msg": "steer message exceeds 50000 char cap"}
+    if "response" in body and len(str(body["response"])) > 50000:
+        return {"field": "response", "msg": "response exceeds 50000 char cap"}
+    return None
+
+
+class ControlExecutor:
+    """Executes control actions against the live Hermes API."""
+
+    def __init__(self, base_url: str, api_key: str, bus: "EventBus") -> None:
+        self.base = base_url.rstrip("/") if base_url else ""
+        self.api_key = api_key
+        self.bus = bus
+        self._client = None
+
+    async def _get_client(self):
+        if self._client is None:
+            self._client = ClientSession()
+        return self._client
+
+    async def execute(self, action: str, body: Dict[str, Any]) -> Dict[str, Any]:
+        contract = CONTROL_ACTION_CONTRACT[action]
+        path = contract["live_path"].format(**body)
+        url = f"{self.base}{path}"
+        headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+        client = await self._get_client()
+        try:
+            async with client.post(url, json=body, headers=headers, timeout=10) as r:
+                if r.status >= 400:
+                    text = await r.text()
+                    return {"ok": False, "action": action, "upstream_status": r.status,
+                            "upstream_body": text[:500]}
+                data = await r.json() if r.content_type == "application/json" else {"raw": (await r.text())[:500]}
+                return {"ok": True, "action": action, "upstream_status": r.status,
+                        "upstream_response": data}
+        except Exception as e:
+            return {"ok": False, "action": action, "error": str(e)}
+
+    async def emit_audit_event(self, action: str, body: Dict[str, Any], result: Dict[str, Any]) -> None:
+        """Emit a control.action event on the SSE bus. Strips message bodies
+        per the no-Pluto-to-Earth boundary rule — keeps only action, run_id,
+        success/fail, upstream status."""
+        evt = NormalizedEvent(
+            agent_id="system",
+            session_id=body.get("session_id", "system"),
+            run_id=body.get("run_id", "unknown"),
+            timestamp=time.time(),
+            event_type="control.action",
+            payload={
+                "action": action,
+                "run_id": body.get("run_id", body.get("session_id", "unknown")),
+                "ok": result.get("ok", False),
+                "upstream_status": result.get("upstream_status"),
+                "error": result.get("error"),
+            },
+        )
+        self.bus.publish(evt)
+
+
+class MockControlExecutor:
+    """Simulates control actions in mock mode."""
+
+    def __init__(self, bus: "EventBus") -> None:
+        self.bus = bus
+        self._stopped_runs: set = set()
+        self._forked_sessions: set = set()
+        self._approvals_responded: set = set()
+        self._steer_count: int = 0
+        self._resolve_count: int = 0
+
+    async def execute(self, action: str, body: Dict[str, Any]) -> Dict[str, Any]:
+        run_id = body.get("run_id", body.get("session_id", "unknown"))
+        if action == "steer":
+            self._steer_count += 1
+            return {"ok": True, "action": "steer", "upstream_status": 202,
+                    "upstream_response": {"steered": True, "steer_count": self._steer_count}}
+        if action == "stop":
+            self._stopped_runs.add(run_id)
+            return {"ok": True, "action": "stop", "upstream_status": 200,
+                    "upstream_response": {"stopped": True, "run_id": run_id,
+                                            "reason": body.get("reason", "operator_stop")}}
+        if action == "approval":
+            self._approvals_responded.add(body.get("approval_id", "unknown"))
+            return {"ok": True, "action": "approval", "upstream_status": 200,
+                    "upstream_response": {"resolved": True, "decision": body["decision"],
+                                            "approval_id": body["approval_id"]}}
+        if action == "fork":
+            new_run = f"mock-fork-{len(self._forked_sessions):03d}"
+            self._forked_sessions.add(body["session_id"])
+            return {"ok": True, "action": "fork", "upstream_status": 201,
+                    "upstream_response": {"forked_from": body["session_id"], "new_run_id": new_run}}
+        if action == "resolve-unknown":
+            self._resolve_count += 1
+            return {"ok": True, "action": "resolve-unknown", "upstream_status": 200,
+                    "upstream_response": {"resolved": True, "count": self._resolve_count}}
+        return {"ok": False, "action": action, "error": "unknown action in mock"}
+
+    async def emit_audit_event(self, action: str, body: Dict[str, Any], result: Dict[str, Any]) -> None:
+        evt = NormalizedEvent(
+            agent_id="system",
+            session_id=body.get("session_id", "system"),
+            run_id=body.get("run_id", "unknown"),
+            timestamp=time.time(),
+            event_type="control.action",
+            payload={
+                "action": action,
+                "run_id": body.get("run_id", body.get("session_id", "unknown")),
+                "ok": result.get("ok", False),
+                "upstream_status": result.get("upstream_status"),
+                "mock": True,
+            },
+        )
+        self.bus.publish(evt)
+
+
+# ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
 
@@ -1451,6 +1669,17 @@ async def app_factory(args: argparse.Namespace) -> web.Application:
     app["bus"] = bus
     app["data_dir"] = DASHBOARD_DATA_DIR
     app["agents_manifest"] = agents_manifest
+    # Phase 4: control plane — disabled by default for production safety
+    app["control_enabled"] = CONTROL_ENABLED
+    if CONTROL_ENABLED:
+        if args.mock or not HERMES_BASE_URL:
+            log.warning("=== CONTROL ENABLED (mock) ===  GODS_EYE_CONTROL_ENABLED=1")
+            app["control_executor"] = MockControlExecutor(bus)
+        else:
+            log.info("=== CONTROL ENABLED (live) ===  forwarding to %s", HERMES_BASE_URL)
+            app["control_executor"] = ControlExecutor(HERMES_BASE_URL, HERMES_API_KEY, bus)
+    else:
+        app["control_executor"] = None
 
     # routes
     app.router.add_get("/api/gods-eye/events", sse_events_handler)
@@ -1558,6 +1787,7 @@ def main() -> None:
     log.info("  hooks:  POST /api/bridge/hooks")
     log.info("  webhk:  POST /api/bridge/webhooks")
     log.info("  traj:   GET  /api/gods-eye/trajectory")
+    log.info("  ctrl:   POST /api/gods-eye/control/{action}")
 
     try:
         loop.run_until_complete(stop.wait())

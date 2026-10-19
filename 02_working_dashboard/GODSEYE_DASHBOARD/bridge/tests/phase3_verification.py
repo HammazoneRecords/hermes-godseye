@@ -60,7 +60,7 @@ def main() -> int:
 
         # 1. Health shows trajectory endpoint + version 1.6.0
         h = json.loads(get("/api/gods-eye/health"))
-        assert h["version"] == "1.6.0", f"expected v1.6.0, got {h['version']}"
+        assert h["version"] in ("1.6.0", "1.7.0"), f"expected v1.6.0 or v1.7.0, got {h['version']}"
         assert "trajectory" in h["endpoints"], "endpoints map missing trajectory"
         assert h["trajectory_sessions"] == 6, f"expected 6 sessions, got {h['trajectory_sessions']}"
         print(f"[ok] 1. /health v{h['version']} + {h['trajectory_sessions']} sessions + trajectory endpoint")

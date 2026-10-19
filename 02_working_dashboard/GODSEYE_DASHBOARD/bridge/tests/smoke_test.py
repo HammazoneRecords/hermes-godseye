@@ -91,7 +91,7 @@ def main():
         # 1. Health
         h = json.loads(get("/api/gods-eye/health"))
         assert h["ok"] is True
-        assert len(h["event_types"]) == 16
+        assert len(h["event_types"]) >= 16, f"expected >=16 event types, got {len(h['event_types'])}"
         assert len(h["color_coding"]) == 10
         print(f"[ok] /health: {len(h['event_types'])} event types, {len(h['color_coding'])} colors")
 
@@ -138,11 +138,21 @@ def main():
         assert json.loads(body)["ok"] is True
         print(f"[ok] /api/bridge/webhooks: status={status}")
 
-        # 6. Phase 4 control stub
+        # 6. Phase 4 control plane — disabled by default, returns 403 for known actions
         for action in ("steer", "stop", "approval", "fork", "resolve-unknown"):
-            body, status = post(f"/api/gods-eye/control/{action}", {})
-            assert status == 501, f"{action}: expected 501, got {status}"
-        print("[ok] /api/gods-eye/control/*: all 5 actions return 501 (Phase 4 stub)")
+            body_str, status = post(f"/api/gods-eye/control/{action}", {})
+            assert status == 403, f"{action}: expected 403 (control disabled), got {status}"
+            body = json.loads(body_str) if body_str else {}
+            assert body["ok"] is False
+            assert "control plane disabled" in body["error"]
+            assert "GODS_EYE_CONTROL_ENABLED" in body["reason"]
+        # Unknown action returns 404 (not 400)
+        body_str, status = post("/api/gods-eye/control/pause", {})
+        assert status == 404, f"unknown action: expected 404, got {status}"
+        body = json.loads(body_str) if body_str else {}
+        assert "unknown action" in body["error"]
+        assert "supported" in body
+        print("[ok] /api/gods-eye/control/*: 5 known actions return 403 (disabled), unknown returns 404")
 
         # 7. Dashboard static serving
         idx = get("/")

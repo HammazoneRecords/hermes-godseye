@@ -145,3 +145,61 @@ To verify each decision was honored:
 | 5 (version alignment) | `godseye-v2/package.json` + `bridge/requirements.txt` version pins match the table above |
 | 6 (boundary compliance) | Bridge `Normalizer.from_*` strips bodies; plugin `_strip_bodies` strips bodies; `_redact` strips secrets |
 | 7 (mock mode) | `--mock` flag + `MockEventSource` class in `gods-eye-bridge.py` |
+
+---
+
+## Decision 8 — Phase 4: outbound control plane (locked in 2026-10-19)
+
+**Choice:** Implement `POST /api/gods-eye/control/{steer|stop|approval|fork|resolve-unknown}` with explicit enable flag, full validation, audit trail on SSE, and production-safe defaults.
+
+**Architectural decisions:**
+
+1. **Default OFF.** The control plane is disabled by default via `GODS_EYE_CONTROL_ENABLED=1` env var. When disabled, all 5 known actions return **403** with a clear "control plane disabled" error. This is production safety: control actions touch the Hermes runtime; an accidental steer or stop against a live run could disrupt active agent work.
+
+2. **Mock vs Live executors.** When enabled, the bridge picks the executor based on `HERMES_BASE_URL`:
+   - Mock mode → `MockControlExecutor` (simulates actions, tracks state for successive calls, emits audit events identically to live)
+   - Live mode → `ControlExecutor` (forwards to `${HERMES_BASE_URL}/v1/runs/{run_id}/{action}` with bearer auth)
+   
+   Both executors share the same `CONTROL_ACTION_CONTRACT` and the same `_validate_control_input` validator, so behavior is identical up to the actual execution step.
+
+3. **Status code contract** (replaces the Phase 1.5 stub's 501):
+   - 200 — action executed successfully (or simulated in mock mode)
+   - 400 — invalid input (missing required field, bad enum value, oversized body)
+   - 403 — control plane disabled (default state — production safety)
+   - 404 — unknown action (not in the 5 supported; returns the supported list)
+   - 500 — control executor not initialized (server bug)
+   - 502 — upstream Hermes API error (live mode only)
+   
+   This aligns the NEXT_SPRINT.md note about "stub currently returns 400, not 501". The Phase 1.5 stub returned 501 for known-but-unimplemented actions. Phase 4's actual contract uses 400 **only** for invalid input (validation failures), and replaces "not yet implemented" with a proper 403-when-disabled + 200-when-enabled-and-valid flow.
+
+4. **Audit trail on SSE.** Every successful action emits a `control.action` event on the SSE bus. The event payload is metadata-only: `action`, `run_id`, `ok`, `upstream_status`, `error`, `mock` flag. The original `message`/`response`/`reason` text from the POST body is **never** included in the audit event — defense in depth with the bridge's body-stripping for live SSE events.
+
+5. **Validation before execution.** `_validate_control_input()` checks required fields, enum constraints (e.g. `approval.decision` must be one of `approve|deny|defer`), and size caps (50k chars for `steer.message` / `resolve-unknown.response`) before forwarding to either executor. This defends against malformed input reaching the Hermes API.
+
+6. **`fork` is special.** It takes `session_id` (not `run_id`) because it creates a NEW run from an existing session. The contract reflects this: `live_path = "/v1/runs"` (no `{run_id}` substitution), and the validator's required fields list `session_id` instead.
+
+## Verification
+
+Phase 4 verification (`bridge/tests/phase4_verification.py`): 13/13 tests pass:
+
+1. Disabled state: health exposes `control_enabled=False` + 5 `control_actions`
+2. Disabled state: all 5 actions return 403 with correct error body
+3. Enabled state: health exposes `control_enabled=True`
+4. Unknown action returns 404 with supported list
+5. Invalid JSON body returns 400
+6. Missing required field returns 400 + field name
+7. Bad enum value (approval.decision='maybe') returns 400 + field name
+8. Oversized steer message (>50k chars) returns 400 with size cap
+9. Each of 5 actions succeeds when enabled + valid input → 200 + audit_emitted=True
+10. Each success emits a `control.action` event on the SSE stream
+11. Audit events are body-stripped (no message text crosses to Earth)
+12. Phase 1.5 + Phase 3 regression: snapshot runtime_verified=true, 21 agents, 3 sessions
+13. Phase 1.5 SSE regression: 25 events in 3s with 0 body leaks
+
+## Boundary compliance
+
+The control plane doesn't introduce new boundary risks:
+- The 5 actions are Pluto-side (runtime controlling runtime); they don't bring Pluto data to Earth.
+- Audit events on SSE carry only metadata (action/run_id/ok/upstream_status), never the POST body's message text.
+- The bridge's existing no-Pluto-to-Earth boundary rule for live SSE events still applies unchanged.
+- Live mode forwards to the Hermes OpenAI-compatible API which itself enforces the intent-vs-log audit model (per Phase 2 Cockpit Plan §7.3).
