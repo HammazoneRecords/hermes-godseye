@@ -11,7 +11,9 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")"
+# Run from anywhere — resolves to the dashboard root (where bridge/ and the
+# dashboard files live), independent of where the repo is checked out.
+cd "$(dirname "$0")/02_working_dashboard/GODSEYE_DASHBOARD"
 
 PORT="${BRIDGE_PORT:-8765}"
 HOST="${BRIDGE_HOST:-127.0.0.1}"

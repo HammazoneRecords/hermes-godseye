@@ -82,7 +82,7 @@ HERMES_TRAJECTORY_PATH = os.environ.get(
 # Where to write the live dashboard snapshot.
 DASHBOARD_DATA_DIR = Path(os.environ.get(
     "GODSEYE_DASHBOARD_DATA",
-    Path(__file__).resolve().parent.parent / "dashboard" / "data",
+    Path(__file__).resolve().parent.parent / "data",
 ))
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -1044,10 +1044,17 @@ def load_agents_manifest() -> List[Dict[str, Any]]:
     if target.exists():
         try:
             data = json.loads(target.read_text())
+            agents = None
             if isinstance(data, dict) and "agents" in data:
-                return data["agents"]
-            if isinstance(data, list):
-                return data
+                agents = data["agents"]
+            elif isinstance(data, list):
+                agents = data
+            if agents is not None:
+                # normalize: repo manifest uses "name"; bridge expects "id"
+                for a in agents:
+                    if isinstance(a, dict):
+                        a.setdefault("id", a.get("name") or a.get("full_name") or "unknown")
+                return agents
         except Exception as e:
             log.warning("agents.json parse error: %s — using mock roster", e)
     # synthesize
