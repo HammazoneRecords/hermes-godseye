@@ -27,6 +27,8 @@ import { FactCheckLayer } from './layers/factCheck';
 import { MemoryStrataLayer } from './layers/memoryStrata';
 import { TerritoriesLayer } from './layers/territories';
 import { GovernanceLayer } from './layers/governance';
+import { ReplayLayer } from './layers/replay';
+import { Timeline } from './components/Timeline';
 import { Inspector } from './components/Inspector';
 import { useAgentsStore } from './store/agentsStore';
 
@@ -125,7 +127,11 @@ export default function App() {
             <FactCheckLayer />
             <TaskPacketsLayer />
             <AgentsLayer viewerRef={viewerRef} />
+            <ReplayLayer />
           </Viewer>
+
+          {/* Phase 3 — Timeline scrub UI */}
+          <Timeline />
 
           {/* Layer legend overlay */}
           <div className="absolute top-3 left-3 bg-panel/80 backdrop-blur p-2 rounded border border-border text-[11px] font-mono z-10">

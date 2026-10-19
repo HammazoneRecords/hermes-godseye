@@ -7,6 +7,7 @@
 import { useAgentsStore } from '../store/agentsStore';
 import { useToolsStore } from '../store/toolsStore';
 import { usePacketsStore } from '../store/packetsStore';
+import { useReplayStore } from '../store/replayStore';
 
 const ALTITUDE_BAND_DESCRIPTION = {
   high: 'High orbit (>50km) — TRISMIGISTUS/GODSEYE/FACTCHECK tier',
@@ -152,6 +153,47 @@ export function Inspector() {
           </ul>
         )}
       </div>
+    
+
+      <ReplayContextSection agent={agent} />
     </aside>
   );
 }
+
+function ReplayContextSection({ agent }) {
+  // Phase 3 — show replay context for the selected agent when in replay mode
+  const replayMode = useReplayStore((s) => s.mode === 'replay');
+  const events = useReplayStore((s) => s.events);
+  const currentTime = useReplayStore((s) => s.current_time);
+  if (!replayMode) return null;
+  const agentEvents = events.filter(e => e.agent_id === agent.id && e.ts <= currentTime);
+  const recent = agentEvents.slice(-5).reverse();
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <div className="text-[10px] text-text-faint uppercase tracking-wider mb-1">
+        Replay context
+      </div>
+      {recent.length === 0 ? (
+        <p className="text-[11px] text-text-faint">— no events at or before scrub position —</p>
+      ) : (
+        <ul className="space-y-1 text-[11px] font-mono">
+          {recent.map((e) => (
+            <li key={`${e.trajectory_id}-${e.turn}`} className="flex flex-col">
+              <span>
+                <span style={{
+                  color: { system: '#00ffd5', human: '#e2b45d', gpt: '#72c69a', tool: '#00b4ff' }[e.role] || '#e9edf4'
+                }}>{e.role}</span>
+                {' · T' + e.turn + ' · ' + new Date(e.ts * 1000).toLocaleTimeString()}
+              </span>
+              <span className="text-text-faint pl-3">
+                {e.tool ? `${e.tool} (${e.args_size || 0}B)` : `${e.body_chars || 0} chars`}
+                {e.decision ? ` · ${e.decision}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
