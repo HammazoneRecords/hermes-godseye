@@ -1,0 +1,25 @@
+agent:
+  name: HermesSPL
+  reports_to: Plato
+  root: /root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato
+  role: spl_merger_architect
+  fork_root: /root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato/HermesSPL_T2_Execution/hermes-agent-spl-fork
+mode:
+  default: inspect_and_propose
+  writes_require_scope: true
+  destructive_actions: forbidden_without_explicit_owner_approval
+read_scope:
+  - /root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato
+  - /root/MW_CENTRAL/agent_space/agent-ONU_Plato
+  - /root/MW_CENTRAL/agent_space/Pluto_AGENT_REGISTRY.md
+  - /root/MW_CENTRAL/agent_space/Plato_AGENT_REGISTRY.md
+  - live Hermes source (comparison only, never mutation)
+write_scope:
+  - /root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato
+model_assignment:
+  provider: opencode-free
+  model: nemotron-3-ultra-free
+  fallback: poolside/laguna-s-2.1:free
+  task_matrix: /root/MW_CENTRAL/MIndwaVe_Ja/local_model_benchmarks/MODEL_TASK_MATRIX.md
+  concurrency: one_active_instance_per_model
+  lock_file: /root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato/HermesSPL_MODEL_LOCK.md

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godseye — Agent Dashboard</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Godseye Agent Dashboard</h1>
+    <div class="subtitle">HermesSPL mesh · metadata-only visualization · Phase 1</div>
+  </div>
+  <div class="badge">PHASE 1</div>
+</div>
+
+<div class="main">
+  <!-- LEFT PANEL: Agent list + filters -->
+  <div class="left-panel">
+    <div class="search">
+      <input type="text" id="agent-search" placeholder="Search agents..." oninput="filterAgents()">
+    </div>
+    <div class="section-header">Layers</div>
+    <div class="filter-group">
+      <label><input type="checkbox" checked onchange="toggleLayer('core', this.checked)"> Core agents (altitude &gt; 50km)</label>
+      <label><input type="checkbox" checked onchange="toggleLayer('active', this.checked)"> Active workers</label>
+      <label><input type="checkbox" checked onchange="toggleLayer('memory', this.checked)"> Memory operations</label>
+      <label><input type="checkbox" checked onchange="toggleLayer('gates', this.checked)"> Jhanos gates</label>
+      <label><input type="checkbox" checked onchange="toggleLayer('writers', this.checked)"> Writers / scribes</label>
+    </div>
+    <div class="section-header">Color Legend</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#72c69a"></span> Verified</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#f3c969"></span> Pending</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff3333"></span> Correction</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#00b4ff"></span> Tool call</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e2b45d"></span> Approval</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span> Memory</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#00ffd5"></span> Infrastructure</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff69b4"></span> Traffic</div>
+    <div class="scroll-area" id="agent-list"></div>
+  </div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+    <div class="godseye-bar">
+      <span class="dot"></span>
+      <span class="metric"><span class="value" id="ge-concepts">-</span> <span class="label">concepts</span></span>
+      <span class="metric"><span class="value" id="ge-agents">-</span> <span class="label">agents</span></span>
+      <span class="metric"><span class="value" id="ge-queues">-</span> <span class="label">queues</span></span>
+      <span class="metric"><span class="value" id="ge-memory">-</span> <span class="label">memory</span></span>
+      <span class="metric"><span class="value" id="ge-sources">-</span> <span class="label">sources</span></span>
+      <span class="metric"><span class="value" id="ge-verified">false</span> <span class="label">verified</span></span>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('agents', this)">Agents</div>
+      <div class="tab" onclick="switchTab('flow', this)">Task Flow</div>
+      <div class="tab" onclick="switchTab('memory', this)">Memory</div>
+      <div class="tab" onclick="switchTab('queue', this)">Fact-Check</div>
+      <div class="tab" onclick="switchTab('feedback', this)">Feedback</div>
+      <div class="tab" onclick="switchTab('governance', this)">Governance</div>
+    </div>
+
+    <!-- Tab: Agents -->
+    <div class="tab-content active" id="tab-agents">
+      <div class="agent-grid" id="agent-grid">
+        <div class="empty-state">Loading agents…</div>
+      </div>
+    </div>
+
+    <!-- Tab: Task Flow -->
+    <div class="tab-content" id="tab-flow">
+      <div class="flow-container">
+        <div class="flow-title">Task Packet Flow</div>
+        <p style="font-size:9pt;color:#666;margin-bottom:10px;">Planes = fast messages · Ships = heavy cargo · Altitude = confidence</p>
+        <div class="agent-grid" id="flow-grid">
+          <div class="empty-state">Loading flow data…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Memory -->
+    <div class="tab-content" id="tab-memory">
+      <div class="flow-container">
+        <div class="flow-title">Memory Layers</div>
+        <div id="memory-panel"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Fact-Check Queue -->
+    <div class="tab-content" id="tab-queue">
+      <div class="flow-container">
+        <div class="flow-title">Fact-Check Queue</div>
+        <div id="queue-panel"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Feedback -->
+    <div class="tab-content" id="tab-feedback">
+      <div class="flow-container">
+        <div class="flow-title">Feedback History</div>
+        <div id="feedback-panel"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Governance Visualization -->
+    <div class="tab-content" id="tab-governance">
+      <div class="flow-container" id="governance-container">
+        <div class="flow-title">Governance Layer</div>
+        <div id="governance-overview"></div>
+        <div id="governance-boundaries"></div>
+        <div id="governance-constraints"></div>
+        <div id="governance-skills"></div>
+        <div id="governance-agents"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: Inspector / Cockpit -->
+  <div class="right-panel">
+    <div class="header-row">
+      <h3>Inspector</h3>
+      <span id="inspector-close" style="cursor:pointer;color:#666;" onclick="clearInspector()">✕</span>
+    </div>
+    <div class="inspector-body" id="inspector-body">
+      <div class="empty-state">Select an agent to inspect</div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="status-left">Loading…</span>
+  <span id="status-right">Godseye v0.1 · Phase 1</span>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

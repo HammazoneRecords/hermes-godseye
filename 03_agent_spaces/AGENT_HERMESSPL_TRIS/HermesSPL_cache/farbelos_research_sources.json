@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": 1,
+      "url": "https://arxiv.org/pdf/1210.8047",
+      "title": "The f-belos",
+      "accessed": "2026-09-02"
+    },
+    {
+      "id": 2,
+      "url": "https://doi.org/10.48550/arxiv.1210.2279",
+      "title": "The parbelos, a parabolic analog of the arbelos",
+      "accessed": "2026-09-02"
+    },
+    {
+      "id": 3,
+      "url": "https://haroldpboas.gitlab.io/preprints/arbelos.pdf",
+      "title": "Reflections on the Arbelos",
+      "accessed": "2026-09-02"
+    },
+    {
+      "id": 4,
+      "url": "https://bibliotekanauki.pl/articles/122980.pdf",
+      "title": "Variations on the arbelos",
+      "accessed": "2026-09-02"
+    },
+    {
+      "id": 5,
+      "url": "https://link.springer.com/article/10.1007/BF00993424",
+      "title": "Mohr's arbelos",
+      "accessed": "2026-09-02"
+    },
+    {
+      "id": 6,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42358616",
+      "title": "Towards a neurophysiological model of kundalini",
+      "accessed": "2026-09-02"
+    }
+  ]
+}

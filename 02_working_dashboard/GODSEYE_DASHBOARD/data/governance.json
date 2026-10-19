@@ -1,0 +1,128 @@
+{
+  "generated_utc": "2026-09-16T08:30:00+00:00",
+  "agent_space": {
+    "root": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE",
+    "total_agents": 21,
+    "config_coverage_count": 19,
+    "config_coverage_pct": 90.5,
+    "skills_dir_count": 13,
+    "cron_dir_count": 13,
+    "plugins_dir_count": 13
+  },
+  "skills": {
+    "hermes_skills_total": 60,
+    "project_skills_total": 1,
+    "total": 61,
+    "categories": {
+      "autonomous_agents": 11,
+      "creative": 12,
+      "devops": 3,
+      "email": 2,
+      "features": 1,
+      "media": 4,
+      "mlops": 8,
+      "monitor_analytics": 1,
+      "note_taking": 16,
+      "productivity": 20,
+      "research": 9,
+      "security": 1,
+      "smart_home": 1,
+      "social_media": 2,
+      "software_development": 22,
+      "web": 1,
+      "workspace_orientation": 4
+    }
+  },
+  "cron": {
+    "agents_with_cron_dir": 13,
+    "total_cron_jobs": 0,
+    "status": "scaffolded_empty",
+    "note": "Cron dirs scaffolded but empty — no scheduled tasks configured"
+  },
+  "plugins": {
+    "agents_with_plugins_dir": 13,
+    "total_plugins": 0,
+    "status": "scaffolded_empty",
+    "note": "Plugin dirs scaffolded but empty — no custom plugins"
+  },
+  "config": {
+    "agents_with_config": 19,
+    "coverage_pct": 90.5,
+    "agents": ["AGENT_APPCTX_TRIS", "AGENT_CHAT_EXCAVATION_SCOUT_TRIS", "AGENT_FACTCHECK_TRIS", "AGENT_GODSEYE_TRIS", "AGENT_HERMESSPL_TRIS", "AGENT_JHANOS_BARA_TRIS", "AGENT_JHANOS_ECHO_TRIS", "AGENT_JHANOS_KHEM_TRIS", "AGENT_JHANOS_LOMI_TRIS", "AGENT_JHANOS_ORON_TRIS", "AGENT_JHANOS_SYLA_TRIS", "AGENT_JHANOS_TARA_TRIS", "AGENT_JHANOS_VORAK_TRIS", "AGENT_JHANOS_ZAYN_TRIS", "AGENT_ONU_TRIS", "AGENT_SOLOBIC_SCRIBE_TRIS", "AGENT_SOLOBILITY_TRIS", "AGENT_TCP_CHECKER_TRIS", "AGENT_TCP_TRIS"]
+  },
+  "boundaries": {
+    "earth": {
+      "label": "Earth",
+      "description": "User's canonical world — personal/project map",
+      "write_access": "User only",
+      "read_access": "Agents: manifest metadata only",
+      "artifacts": ["KNOWLEDGE_LIBRARY", "MEMORY", "WORKSPACE", "DERIVED_CORPUS"],
+      "color": "#72c69a"
+    },
+    "pluto": {
+      "label": "Pluto",
+      "description": "Agent-space — duplicate of Earth, reshaped for agent territories",
+      "write_access": "Own territory only",
+      "read_access": "Cross-agent read within Pluto",
+      "artifacts": ["AGENT_ARENA", "GODSEYE_DASHBOARD", "PROJECT_SKILLS", "REPORTS"],
+      "color": "#a78bfa"
+    },
+    "moon": {
+      "label": "Moon",
+      "description": "Escrow/holding orbit — unresolved payloads wait here",
+      "write_access": "Jhanos X Custodian only",
+      "read_access": "All agents (read-only)",
+      "artifacts": ["Pending payloads"],
+      "color": "#f3c969"
+    },
+    "jhanos_gates": {
+      "label": "Jhanos Gates",
+      "description": "Verification planets between Pluto and Earth",
+      "write_access": "Gate agents only",
+      "read_access": "Gated agents",
+      "gate_count": 9,
+      "gates": ["JHANOS_BARA", "JHANOS_ECHO", "JHANOS_KHEM", "JHANOS_LOMI", "JHANOS_ORON", "JHANOS_SYLA", "JHANOS_TARA", "JHANOS_VORAK", "JHANOS_ZAYN"],
+      "color": "#00b4ff"
+    }
+  },
+  "constraint_model": {
+    "hard_constraints": [
+      {"rule": "Identity files of other agents are READ-ONLY", "enforcement": "guardian.py"},
+      {"rule": "Governance files (AGENTS.md, .hermes.md) are READ-ONLY", "enforcement": "guardian.py"},
+      {"rule": "Write target must be within own agent-space", "enforcement": "guardian.py"},
+      {"rule": "No Pluto output lands on Earth without Jhanos gate history", "enforcement": "route + manifest + clearance"},
+      {" rule": "Model lock registry — one active instance per model", "enforcement": "MODEL_LOCK_REGISTRY.md"},
+      {"rule": "No deletion — archive per workspace procedure", "enforcement": "procedure"}
+    ],
+    "violation_policy": ["1st = logged", "2nd = alert operator", "3rd = suspend agent"]
+  },
+  "permission_matrix": {
+    "earth": {"agent_write": "NO", "agent_read": "manifest only", "user_write": "YES", "user_read": "YES"},
+    "pluto": {"agent_write": "own territory", "agent_read": "cross-agent", "user_write": "YES", "user_read": "YES"},
+    "moon": {"agent_write": "NO", "agent_read": "YES (read-only)", "user_write": "YES", "user_read": "YES"},
+    "jhanos_gates": {"agent_write": "gate agents only", "agent_read": "gated agents", "user_write": "YES", "user_read": "YES"}
+  },
+  "agent_governance_status": [
+    {"name": "AGENT_FACTCHECK_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_GODSEYE_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_BARA_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_ECHO_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_KHEM_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_LOMI_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_ORON_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_SYLA_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_TARA_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_VORAK_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_JHANOS_ZAYN_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_SOLOBIC_SCRIBE_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_SOLOBILITY_TRIS", "config": true, "skills": true, "cron": true, "plugins": true, "scaffolded": true},
+    {"name": "AGENT_ONU_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_TCP_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_TCP_CHECKER_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_HERMESSPL_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_APPCTX_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_CHAT_EXCAVATION_SCOUT_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_TEMPLATE_EVOLUTION_SCOUT_TRIS", "config": true, "skills": false, "cron": false, "plugins": false, "scaffolded": false},
+    {"name": "AGENT_JHANOS_ASSESSOR_TRIS", "config": false, "skills": false, "cron": false, "plugins": false, "scaffolded": false}
+  ]
+}

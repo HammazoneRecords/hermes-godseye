@@ -1,0 +1,461 @@
+{
+  "generated_utc": "2026-09-16T06:13:56.493115+00:00",
+  "agent_count": 21,
+  "agents": [
+    {
+      "name": "APPCTX",
+      "full_name": "AGENT_APPCTX_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_APPCTX_TRIS",
+      "files": [],
+      "scope_excerpt": "# AppCtx Scope\n\nRoot: `/root/MW_CENTRAL/agent_space/agent-AppCtx_Onu`\nReports to: Onu\nAssigned model: `deepseek-v4-flash`\nModel matrix: `/root/MW_CENTRAL/MIndwaVe_Ja/local_model_benchmarks/MODEL_TASK_MATRIX.md`\n\n## Model lock rule\n\nAppCtx must stay on `deepseek-v4-flash` for active-app context work unless Onu/Plato explicitly reassigns it. No second active scoped agent may use `deepseek-v4-flash` while AppCtx's model lock is active.\n\n## Write scope\n\nPrimary write scope:\n\n```text\n/root/MW_CENTRAL",
+      "model": "`deepseek-v4-flash`",
+      "role": "Scout/Custodian",
+      "last_activity": "2026-09-15T20:16:26.542322"
+    },
+    {
+      "name": "CHAT_EXCAVATION_SCOUT",
+      "full_name": "AGENT_CHAT_EXCAVATION_SCOUT_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_CHAT_EXCAVATION_SCOUT_TRIS",
+      "files": [],
+      "scope_excerpt": "# ChatExcavationScout FIRST SCOPE AUDIT TASK\n\n## Task\n\nVerify this scaffold is bounded and safe before activation.\n\n## Checks\n\n- Core files exist.\n- All core files use ChatExcavationScout prefix.\n- No forbidden files exist in root: AGENTS.md, CLAUDE.md, .hermes.md, .env, auth.json.\n- Write scope is explicit.\n- Report-to relation is explicit.\n- Task status file exists.\n\n## Required output\n\nWrite audit result to:\n\n```text\nChatExcavationScout_T2_Execution/ChatExcavationScout_first_scope_audit.md\n``",
+      "task_status_excerpt": "# ChatExcavationScout TASK STATUS\n\nUpdated: 2026-09-12T04:41:56.762508+00:00\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n- Blockers: awaiting activation\n- Morale/temperament: not assessed; no runtime evidence yet\n\n## Last report\n\nNone.\n",
+      "current_task": "# ChatExcavationScout TASK STATUS",
+      "role": "Scout/Custodian",
+      "manifest": {
+        "agent": "ChatExcavationScout",
+        "reports_to": "Hermes",
+        "actor_class": "Scout/Custodian",
+        "created_utc": "2026-09-12T04:41:56.762508+00:00",
+        "status": "scaffolded_not_activated",
+        "root": "/root/MW_CENTRAL/agent_space/agent-ChatExcavationScout_Hermes",
+        "read_only_by_default": true,
+        "write_root": "/root/MW_CENTRAL/agent_space/agent-ChatExcavationScout_Hermes",
+        "forbidden": [
+          ".env",
+          "auth.json",
+          "AGENTS.md",
+          "CLAUDE.md",
+          ".hermes.md",
+          "global SOUL.md",
+          "global USER.md",
+          "global MEMORY.md"
+        ],
+        "truth_loop": [
+          "intent",
+          "log_truth",
+          "agent_claim",
+          "comparison_ledger"
+        ]
+      },
+      "last_activity": "2026-09-15T20:16:26.543322"
+    },
+    {
+      "name": "FACTCHECK",
+      "full_name": "AGENT_FACTCHECK_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_FACTCHECK_TRIS",
+      "files": [],
+      "scope_excerpt": "# FACTCHECK Scope\n\nIn scope:\n- Conversation auditing\n- Document auditing\n- Claim verification\n- Evidence sourcing\n- Assistant error detection\n\nOut of scope:\n- Modifying source documents\n- Promoting canon\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/`\nWrite root: own agent-space + KNOWLEDGE_LIBRARY/FACT_CHECK/\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within this agent-space directory\n- Identity files of other agents a",
+      "task_status_excerpt": "# FACTCHECK TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# FACTCHECK TASK STATUS",
+      "role": "Verifier",
+      "manifest": {
+        "agent": "FACTCHECK",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.543322"
+    },
+    {
+      "name": "GODSEYE",
+      "full_name": "AGENT_GODSEYE_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_GODSEYE_TRIS",
+      "files": [],
+      "scope_excerpt": "# GODSEYE Scope\n\nIn scope:\n- Dashboard design and specification\n- Agent/data-flow visualization\n- Metaphor mapping (flight/orbit/globe)\n- Visual system architecture\n- **Building the actual dashboard frontend** (React + CesiumJS, referencing EARTH-MOON/godseye/)\n- **Agent activity monitoring layer** (live task packets, agent nodes, flight paths)\n- **Data dump visualization** (memory bank compression, pins, compression events)\n- **Replay mode** (conclusion change timeline)\n- **Integration with exi",
+      "task_status_excerpt": "# GODSEYE TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# GODSEYE TASK STATUS",
+      "role": "Visualizer / Dashboard Engineer",
+      "manifest": {
+        "agent": "GODSEYE",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-16T08:03:31.746002"
+    },
+    {
+      "name": "HERMESSPL",
+      "full_name": "AGENT_HERMESSPL_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_HERMESSPL_TRIS",
+      "files": [],
+      "scope_excerpt": "# HermesSPL Scope\n\nRoot: `/root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato`\nSupervisor: Plato\n\n## Write scope\n\nHermesSPL may write only inside:\n\n```text\n/root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato\n```\n\nThe fork repo lives at:\n\n```text\n/root/MW_CENTRAL/agent_space/agent-HermesSPL_Plato/HermesSPL_T2_Execution/hermes-agent-spl-fork\n```\n\n## Read scope\n\nHermesSPL may read:\n\n- its own root\n- upstream fork repo\n- Pluto governance/SPL notes for mapping\n- live Hermes source only for comparison, ",
+      "last_activity": "2026-09-15T20:16:26.543322"
+    },
+    {
+      "name": "JHANOS_ASSESSOR",
+      "full_name": "AGENT_JHANOS_ASSESSOR_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_ASSESSOR_TRIS",
+      "files": [],
+      "last_activity": "2026-09-15T19:27:08.124903"
+    },
+    {
+      "name": "JHANOS_BARA",
+      "full_name": "AGENT_JHANOS_BARA_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_BARA_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_BARA Scope\n\nIn scope:\n- Structure, Blueprint, Foundation assessment\n- Distortion detection for BARA signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to ZAYN\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_BARA TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_BARA TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_BARA",
+        "class": "Gate",
+        "gate": "BARA",
+        "direction": "SW",
+        "axis_partner": "ZAYN (NE)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.543322"
+    },
+    {
+      "name": "JHANOS_ECHO",
+      "full_name": "AGENT_JHANOS_ECHO_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_ECHO_TRIS",
+      "files": [],
+      "scope_excerpt": "# JhanosEcho Scope\n\nIn scope:\n- Preliminary entropy results from RunPod uncensored model\n- Jhanos gate contrast analysis\n- Echo generation for SPL integration\n- Entropy model tweak recommendations\n\nOut of scope:\n- Modifying main Jhanos gate logic directly\n- Promoting canon\n- Direct communication with end-users\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: `/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_ECHO_TRIS/`\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JhanosEcho TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JhanosEcho TASK STATUS",
+      "role": "Gate/Custodian",
+      "manifest": {
+        "agent": "JhanosEcho",
+        "class": "Gate/Custodian",
+        "reports_to": "TRISMIGISTUS",
+        "capabilities": [
+          "entropy_analysis",
+          "contrast_gate",
+          "runpod_assessment",
+          "spl_echo"
+        ],
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_KHEM",
+      "full_name": "AGENT_JHANOS_KHEM_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_KHEM_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_KHEM Scope\n\nIn scope:\n- The Forge, Heat, Conflict into Truth assessment\n- Distortion detection for KHEM signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to SYLA\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be wi",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_KHEM TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_KHEM TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_KHEM",
+        "class": "Gate",
+        "gate": "KHEM",
+        "direction": "S",
+        "axis_partner": "SYLA (N)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_LOMI",
+      "full_name": "AGENT_JHANOS_LOMI_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_LOMI_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_LOMI Scope\n\nIn scope:\n- Motion, Memory, Rhythm assessment\n- Distortion detection for LOMI signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to TARA\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within this agen",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_LOMI TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_LOMI TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_LOMI",
+        "class": "Gate",
+        "gate": "LOMI",
+        "direction": "E",
+        "axis_partner": "TARA (W)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_ORON",
+      "full_name": "AGENT_JHANOS_ORON_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_ORON_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_ORON Scope\n\nIn scope:\n- Order, Creeds, Protocols assessment\n- Distortion detection for ORON signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to VORAK\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within this a",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_ORON TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_ORON TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_ORON",
+        "class": "Gate",
+        "gate": "ORON",
+        "direction": "NW",
+        "axis_partner": "VORAK (SE)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_SYLA",
+      "full_name": "AGENT_JHANOS_SYLA_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_SYLA_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_SYLA Scope\n\nIn scope:\n- Stillness, Reception, The Mirror assessment\n- Distortion detection for SYLA signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to KHEM\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_SYLA TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_SYLA TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_SYLA",
+        "class": "Gate",
+        "gate": "SYLA",
+        "direction": "N",
+        "axis_partner": "KHEM (S)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_TARA",
+      "full_name": "AGENT_JHANOS_TARA_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_TARA_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_TARA Scope\n\nIn scope:\n- Nurturance, Reflection, Context assessment\n- Distortion detection for TARA signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to LOMI\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within ",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_TARA TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_TARA TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_TARA",
+        "class": "Gate",
+        "gate": "TARA",
+        "direction": "W",
+        "axis_partner": "LOMI (E)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_VORAK",
+      "full_name": "AGENT_JHANOS_VORAK_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_VORAK_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_VORAK Scope\n\nIn scope:\n- Liberation, Chaos, Unlearning assessment\n- Distortion detection for VORAK signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to ORON\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within ",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_VORAK TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_VORAK TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_VORAK",
+        "class": "Gate",
+        "gate": "VORAK",
+        "direction": "SE",
+        "axis_partner": "ORON (NW)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.544322"
+    },
+    {
+      "name": "JHANOS_ZAYN",
+      "full_name": "AGENT_JHANOS_ZAYN_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_JHANOS_ZAYN_TRIS",
+      "files": [],
+      "scope_excerpt": "# JHANOS_ZAYN Scope\n\nIn scope:\n- Origin, The Seed, First Shimmer assessment\n- Distortion detection for ZAYN signatures\n- RED TEAM / BLUE TEAM evaluation\n- Axis partner handoff to BARA\n\nOut of scope:\n- Other gate assessments (each gate has its own agent)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within ",
+      "model": "`/root/MW_CENTRAL/PLUTO/ENTROPY_MODEL/`",
+      "task_status_excerpt": "# JHANOS_ZAYN TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# JHANOS_ZAYN TASK STATUS",
+      "role": "Gate",
+      "manifest": {
+        "agent": "JHANOS_ZAYN",
+        "class": "Gate",
+        "gate": "ZAYN",
+        "direction": "NE",
+        "axis_partner": "BARA (SW)",
+        "reports_to": "TRISMIGISTUS",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.545322"
+    },
+    {
+      "name": "ONU",
+      "full_name": "AGENT_ONU_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_ONU_TRIS",
+      "files": [],
+      "scope_excerpt": "# Onu SCOPE\n\n**Agent:** ONU  \n**Reports to:** Trismigistus / TRIS\n\n---\n\n## Allowed by default\n\n- Read Onu-prefixed files in `/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_ONU_TRIS`.\n- Read explicitly assigned workspace files and plans.\n- Run read-only checks for existence, git state, manifests, and plan status.\n- Write only Onu-local reports/logs when TRIS assigns write scope.\n\n## Forbidden by default\n\n- No deletion, destructive cleanup, or path cutover.\n- No secret files: `.env`, `auth.json`,",
+      "task_status_excerpt": "# ONU TASK STATUS\n\nUpdated: 2026-09-14T05:07:06+00:00\n- State: profile_free_model_smoke_verified\n- Profile: `/root/.hermes/profiles/onu`\n- Model lane: `nous / meituan/longcat-2.0:free`\n- Runtime proof: `hermes -p onu -z \"Reply exactly: ONU_FREE_SMOKE_OK\"` returned `ONU_FREE_SMOKE_OK`.\n- Scope proof:",
+      "current_task": "# ONU TASK STATUS",
+      "manifest": {
+        "schema": "TRIS Agent Intake Manifest v0.2",
+        "agent": "Onu",
+        "reports_to": "TRIS",
+        "agent_root": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_ONU_TRIS",
+        "allowed_prefix": "Onu_",
+        "allowed_read_files": [
+          "Onu_AGENT_MANIFEST.json",
+          "Onu_INIT_PACKET_FOR_PLATO.md",
+          "Onu_SCOPE.md",
+          "Onu_REPORTS_TO_Plato.md",
+          "Onu_skills/Onu_hermes_spl_governance.md",
+          "Onu_plugins/Onu_intake_routing_spec.md",
+          "Onu_T2_Execution/Onu_test_008_intake_router_sanitized_probe.md"
+        ],
+        "allowed_write_dirs": [
+          "Onu_logs",
+          "Onu_T2_Execution",
+          "Onu_reports",
+          "Onu_proofs",
+          "Onu_tasks"
+        ],
+        "forbidden_context_names": [
+          ".hermes.md",
+          "AGENTS.md",
+          "CLAUDE.md",
+          "SOUL.md",
+          "USER.md",
+          "MEMORY.md",
+          ".env",
+          "auth.json"
+        ],
+        "forbidden_global_skills": [
+          "hermes-spl-governance",
+          "workspace-orientation",
+          "hermes-agent"
+        ],
+        "required_runtime_mode": "--safe-mode",
+        "decision_boundary": "Onu scouts/reports only; TRIS decides ACT/STAGE/DECLINE/SHARE.",
+        "strict_clean_room_policy": "Do not claim clean-room unless no forbidden files, no visible unlisted skill events, no forbidden read lines, and no injected non-agent context are observed.",
+        "status": "profile_free_model_smoke_verified",
+        "model_provider": "nous",
+        "model_requested": "meituan/longcat-2.0:free",
+        "last_verified_utc": "2026-09-14T05:07:06+00:00",
+        "verification": {
+          "profile": "onu",
+          "smoke_command": "hermes -p onu -z \"Reply exactly: ONU_FREE_SMOKE_OK\"",
+          "smoke_result": "ONU_FREE_SMOKE_OK",
+          "boundary": "profile + free model smoke + scope/status/proof only; autonomous Bot/mail/group-chat not claimed"
+        },
+        "last_scope_fixed_utc": "2026-09-14T05:09:04+00:00"
+      },
+      "last_activity": "2026-09-15T20:16:26.545322"
+    },
+    {
+      "name": "SOLOBIC_SCRIBE",
+      "full_name": "AGENT_SOLOBIC_SCRIBE_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_SOLOBIC_SCRIBE_TRIS",
+      "files": [],
+      "scope_excerpt": "# SOLOBIC_SCRIBE Scope\n\nIn scope:\n- Image description via image_deScriber tool\n- Visual \u2192 text translation using solobic logic\n- Meaning-layer extraction from visual sources\n- Source-linked provenance for all captures\n\nOut of scope:\n- Writing Book of Solobility content (that is SOLOBILITY's job)\n- Deciding what to capture (TRIS or user directs)\n- Canon promotion\n\nRead root: `/root/MW_CENTRAL/PLUTO/`\nWrite root: own agent-space only\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard ",
+      "task_status_excerpt": "# SOLOBIC_SCRIBE TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# SOLOBIC_SCRIBE TASK STATUS",
+      "role": "Scribe",
+      "manifest": {
+        "agent": "SOLOBIC_SCRIBE",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.545322"
+    },
+    {
+      "name": "SOLOBILITY",
+      "full_name": "AGENT_SOLOBILITY_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_SOLOBILITY_TRIS",
+      "files": [],
+      "scope_excerpt": "# SOLOBILITY Scope\n\nIn scope:\n- Book of Solobility drafting and refinement\n- Show-don't-define content generation\n- Three-tier reading level output (Valley/Ridge/Peak)\n- Collaboration with SOLOBIC_SCRIBE for visual content\n\nOut of scope:\n- Image description (that is SOLOBIC_SCRIBE's job)\n- Canon promotion\n- Direct user communication\n\nRead root: `/root/MW_CENTRAL/PLUTO/PROJECT_SKILLS/love-ref/` (reference)\nWrite root: own agent-space + Book of Solobility outputs\n\n\n---\n\n## Scope Enforcement (auto-",
+      "task_status_excerpt": "# SOLOBILITY TASK STATUS\n\nUpdated: 2026-09-15T00:00:00Z\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n",
+      "current_task": "# SOLOBILITY TASK STATUS",
+      "role": "Writer",
+      "manifest": {
+        "agent": "SOLOBILITY",
+        "status": "scaffolded"
+      },
+      "last_activity": "2026-09-15T20:16:26.545322"
+    },
+    {
+      "name": "TCP_CHECKER",
+      "full_name": "AGENT_TCP_CHECKER_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TCP_CHECKER_TRIS",
+      "files": [],
+      "scope_excerpt": "# TCP01 SCOPE\n\nRead scope: explicit PLUTO/AGENT_ARENA task packets and Tris-assigned evidence routes.\nWrite scope: `/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TCP01_TRIS` only.\nForbidden: secrets, deletion, path cutover, direct canon promotion, unassigned H1 archive scans.\nReports to: Trismigistus.\n\n\n---\n\n## Scope Enforcement (auto-generated 2026-09-15)\n\n**Hard boundaries active:**\n- Write target must be within this agent-space directory\n- Identity files of other agents are READ-ONLY\n- Gove",
+      "task_status_excerpt": "# TCP01 TASK STATUS\n\nUpdated: 2026-09-14T04:08:10+00:00\n- State: profile_free_model_smoke_verified\n- Task: verifier/proof agent first; ready for bounded proof assignments.\n- Profile: `/root/.hermes/profiles/tcp01`\n- Model lane: `nous / upstage/solar-pro4:free`\n- Runtime proof: `hermes -p tcp01 -z \"R",
+      "current_task": "# TCP01 TASK STATUS",
+      "manifest": {
+        "agent": "TCP01",
+        "reports_to": "TRIS",
+        "class": "Gate/Custodian",
+        "status": "profile_free_model_smoke_verified",
+        "root": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TCP01_TRIS",
+        "write_scope": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TCP01_TRIS",
+        "source_legacy_root": "/root/MW_CENTRAL/PLUTO/agents-arena/agent-TCP01_Self",
+        "template_history": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TCP01_TRIS/TEMPLATE_HISTORY",
+        "model_requested": "upstage/solar-pro4:free",
+        "created_utc": "2026-09-12T07:17:22.813808+00:00",
+        "model_provider": "nous",
+        "profile": "tcp01",
+        "profile_home": "/root/.hermes/profiles/tcp01",
+        "last_verified_utc": "2026-09-14T04:08:10+00:00",
+        "verification": {
+          "profile": "tcp01",
+          "model": "upstage/solar-pro4:free",
+          "provider": "nous",
+          "smoke_command": "hermes -p tcp01 -z \"Reply exactly: TCP01_FREE_SMOKE_OK\"",
+          "smoke_result": "TCP01_FREE_SMOKE_OK",
+          "boundary": "profile + free model smoke + scope/status/proof only; autonomous Bot/mail/group-chat not claimed"
+        }
+      },
+      "last_activity": "2026-09-15T20:16:26.546322"
+    },
+    {
+      "name": "TCP",
+      "full_name": "AGENT_TCP_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TCP_TRIS",
+      "files": [],
+      "scope_excerpt": "# TCP SCOPE\n\n**Agent:** TCP\n**Reports to:** H1 (peer of Plato)\n\n---\n\n## Allowed by default\n\n- Read/write TCP-prefixed files inside `agent-TCP_H1`.\n- **View (read-only) Plato's surfaces and actions** \u2014 peer right, so TCP can record governance decisions in the timeline.\n- Read bounded, Plato/H1-assigned source routes for formalization (once scope is granted).\n- Produce timeline nodes, concept docs, topic-tag maps inside `TCP_Drayl/`, `TCP_T2_Execution/`.\n\n## Forbidden by default\n\n- **No scanning `",
+      "last_activity": "2026-09-15T20:16:26.547322"
+    },
+    {
+      "name": "TEMPLATE_EVOLUTION_SCOUT",
+      "full_name": "AGENT_TEMPLATE_EVOLUTION_SCOUT_TRIS",
+      "path": "/root/MW_CENTRAL/PLUTO/AGENT_ARENA/ACTIVE/AGENT_TEMPLATE_EVOLUTION_SCOUT_TRIS",
+      "files": [],
+      "scope_excerpt": "# TemplateEvolutionScout SCOPE\n\nAgent: TemplateEvolutionScout\nReports to: TRISMIGISTUS\nActor class: Scout/Translator\n\n## Allowed by default\n\n- Read files inside this agent root.\n- Read explicitly assigned source packets.\n- Produce reports inside this agent root.\n- Update TemplateEvolutionScout_TASK_STATUS.md after assigned work.\n\n## Write scope\n\nDefault write scope:\n\n```text\n/root/MW_CENTRAL/agent_space/agent-TemplateEvolutionScout_Hermes\n```\n\nAny write outside this root requires explicit task g",
+      "task_status_excerpt": "# TemplateEvolutionScout TASK STATUS\n\nUpdated: 2026-09-12T04:41:56.815938+00:00\n\n## Current status\n\n- State: scaffolded_not_activated\n- Current task: none\n- Blockers: awaiting activation\n- Morale/temperament: not assessed; no runtime evidence yet\n\n## Last report\n\nNone.\n",
+      "current_task": "# TemplateEvolutionScout TASK STATUS",
+      "role": "Scout/Meta",
+      "manifest": {
+        "agent": "TemplateEvolutionScout",
+        "reports_to": "Hermes",
+        "actor_class": "Scout/Translator",
+        "created_utc": "2026-09-12T04:41:56.815938+00:00",
+        "status": "scaffolded_not_activated",
+        "root": "/root/MW_CENTRAL/agent_space/agent-TemplateEvolutionScout_Hermes",
+        "read_only_by_default": true,
+        "write_root": "/root/MW_CENTRAL/agent_space/agent-TemplateEvolutionScout_Hermes",
+        "forbidden": [
+          ".env",
+          "auth.json",
+          "AGENTS.md",
+          "CLAUDE.md",
+          ".hermes.md",
+          "global SOUL.md",
+          "global USER.md",
+          "global MEMORY.md"
+        ],
+        "truth_loop": [
+          "intent",
+          "log_truth",
+          "agent_claim",
+          "comparison_ledger"
+        ]
+      },
+      "last_activity": "2026-09-15T20:16:26.547322"
+    }
+  ]
+}
