@@ -60,6 +60,7 @@
       <div class="tab" onclick="switchTab('queue', this)">Fact-Check</div>
       <div class="tab" onclick="switchTab('feedback', this)">Feedback</div>
       <div class="tab" onclick="switchTab('governance', this)">Governance</div>
+      <div class="tab" onclick="switchTab('live', this)">● Live</div>
     </div>
 
     <!-- Tab: Agents -->
@@ -113,6 +114,24 @@
         <div id="governance-constraints"></div>
         <div id="governance-skills"></div>
         <div id="governance-agents"></div>
+      </div>
+    </div>
+    <!-- Tab: Live (Phase 1.5 — SSE event stream from gods-eye bridge) -->
+    <div class="tab-content" id="tab-live">
+      <div class="flow-container">
+        <div class="flow-title">● Live Cockpit</div>
+        <p style="font-size:9pt;color:#666;margin-bottom:10px;">
+          Real-time event stream from <code>gods-eye-bridge</code> at
+          <code>/api/gods-eye/events</code>. Subscribes via EventSource when this tab is active.
+        </p>
+        <div class="live-layout">
+          <div class="live-agents" id="live-agents">
+            <div class="empty-state">Connecting to bridge…</div>
+          </div>
+          <div class="live-stream" id="live-stream">
+            <div class="empty-state">Waiting for events…</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

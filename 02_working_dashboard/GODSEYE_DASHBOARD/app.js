@@ -543,6 +543,168 @@
     return '<td class="perm-deny">✗</td>';
   }
 
+
+  // ── Live tab (Phase 1.5 — SSE from gods-eye bridge) ───────────
+  // Honors the existing module pattern: uses `state`, `$()`, colors from COLORS.
+  // Subscribes to /api/gods-eye/events when the Live tab is active; closes on switch.
+  state.liveEvents = [];
+  state.liveAgents = {};      // agent_id -> {count, last_kind, last_ts}
+  state.liveEventSource = null;
+  state.liveMaxEvents = 200;
+
+  const LIVE_EVENT_STYLE = {
+    'agent.started':             { color: COLORS.infra,  label: 'START' },
+    'agent.stopped':             { color: COLORS.warn,    label: 'STOP'  },
+    'agent.message.delta':       { color: COLORS.traffic, label: 'MSG'   },
+    'agent.tool.started':         { color: COLORS.tool,    label: 'TOOL→' },
+    'agent.tool.completed':       { color: COLORS.tool,    label: 'TOOL✓' },
+    'agent.subagent.start':       { color: COLORS.approval,label: 'SUB→'  },
+    'agent.subagent.complete':    { color: COLORS.approval,label: 'SUB✓'  },
+    'agent.approval.request':     { color: COLORS.approval,label: 'APPR?' },
+    'agent.approval.responded':  { color: COLORS.approval,label: 'APPR!' },
+    'agent.skill.lifecycle':     { color: COLORS.memory,  label: 'SKILL' },
+    'agent.room.activity':        { color: COLORS.idle,    label: 'ROOM'  },
+    'system.gateway_health':      { color: COLORS.infra,   label: 'GW'    },
+    'system.cron_execution':      { color: COLORS.infra,   label: 'CRON'  },
+    'system.gateway_diagnostic':  { color: COLORS.warn,    label: 'DIAG'  },
+    'cargo.transfer':             { color: COLORS.memory,  label: 'CARGO' },
+    'memory.mutation':             { color: COLORS.memory,  label: 'MEM'   },
+  };
+
+  function startLiveTab() {
+    if (state.liveEventSource) return;
+    try {
+      const es = new EventSource('/api/gods-eye/events');
+      state.liveEventSource = es;
+      es.onopen = () => updateLiveAgents_(['bridge: connected']);
+      es.onerror = () => updateLiveAgents_(['bridge: reconnecting…']);
+      es.onmessage = (msg) => {
+        try { ingestLiveEvent_(JSON.parse(msg.data)); }
+        catch (e) { /* ignore bad frame */ }
+      };
+    } catch (e) {
+      updateLiveAgents_(['SSE unsupported in this browser']);
+    }
+  }
+
+  function stopLiveTab() {
+    if (state.liveEventSource) {
+      state.liveEventSource.close();
+      state.liveEventSource = null;
+    }
+  }
+
+  function ingestLiveEvent_(evt) {
+    state.liveEvents.push(evt);
+    if (state.liveEvents.length > state.liveMaxEvents) state.liveEvents.shift();
+    if (evt.agent_id && evt.agent_id !== 'system') {
+      const cur = state.liveAgents[evt.agent_id] || { count: 0, last_kind: '', last_ts: 0 };
+      cur.count += 1;
+      cur.last_kind = evt.event_type;
+      cur.last_ts = evt.timestamp;
+      state.liveAgents[evt.agent_id] = cur;
+    }
+    renderLiveTab_();
+  }
+
+  function fmtLiveTime_(ts) {
+    const d = new Date(ts * 1000);
+    return d.toTimeString().slice(0, 8);
+  }
+
+  function renderLivePayload_(evt) {
+    const p = evt.payload || {};
+    switch (evt.event_type) {
+      case 'agent.message.delta':       return '<span style="color:' + COLORS.traffic + '">+' + (p.delta_chars||0) + ' chars</span>';
+      case 'agent.tool.started':         return esc(p.tool || '?') + ' · args ' + (p.args_size||0) + 'B';
+      case 'agent.tool.completed':       return esc(p.tool || '?') + ' · ' + (p.ok ? 'ok' : '<span style="color:' + COLORS.error + '">FAILED</span>') + ' · ' + (p.duration_ms||0) + 'ms';
+      case 'agent.subagent.start':       return '→ ' + esc(p.child || '?') + ' (' + esc(p.profile || '?') + ')';
+      case 'agent.subagent.complete':   return '← ' + esc(p.child || '?') + ' · ' + (p.ok ? 'ok' : 'FAILED');
+      case 'agent.approval.request':     return esc(p.kind || '?') + ' · ' + esc(p.summary || '');
+      case 'agent.approval.responded':  return esc(p.decision || '?');
+      case 'agent.skill.lifecycle':     return esc(p.skill || '?') + ' · ' + esc(p.action || '?');
+      case 'system.gateway_health':     return esc(p.gateway_state || '?') + ' · agents=' + (p.active_agents||0) + ' · v' + esc(p.version||'?');
+      case 'system.cron_execution':     return esc(p.job_key || '?') + ' · ' + esc(p.status || '?') + ' · ' + (p.duration_ms||0) + 'ms';
+      case 'memory.mutation':           return 'traj ' + esc(p.trajectory_id || '?') + ' · ' + (p.sharegpt_entries||0) + ' entries';
+      default:                          return JSON.stringify(p).slice(0, 80);
+    }
+  }
+
+  function renderLiveTab_() {
+    // agents column
+    const agentsBox = $('live-agents');
+    if (!agentsBox) return;
+    const known = (state.agents && state.agents.agents ? state.agents.agents : []).map(a => a.id || a.name);
+    const allIds = new Set([...known, ...Object.keys(state.liveAgents)]);
+    const sortedIds = [...allIds].sort((a, b) => {
+      const ta = (state.liveAgents[a] && state.liveAgents[a].last_ts) || 0;
+      const tb = (state.liveAgents[b] && state.liveAgents[b].last_ts) || 0;
+      return tb - ta;
+    });
+    let html = '';
+    for (const id of sortedIds) {
+      const info = state.liveAgents[id];
+      const isActive = info && (Date.now()/1000 - info.last_ts) < 5;
+      const cls = 'live-agent' + (isActive ? ' is-active' : '');
+      html += '<div class="' + cls + '">' +
+              '<div class="live-agent__head"><span class="live-agent__id"><span class="live-agent__pulse"></span>' +
+              esc(id) + '</span><span class="live-agent__count">' +
+              (info ? info.count + ' evts' : '—') + '</span></div>' +
+              '<div style="color:#666;font-size:10pt;">' +
+              (info ? esc(info.last_kind) + ' · ' + fmtLiveTime_(info.last_ts) : 'no events yet') +
+              '</div></div>';
+    }
+    agentsBox.innerHTML = html || '<div class="empty-state">No agents.</div>';
+
+    // event stream
+    const stream = $('live-stream');
+    if (!stream) return;
+    if (state.liveEvents.length === 0) {
+      if (!stream.querySelector('.empty-state')) {
+        stream.innerHTML = '<div class="empty-state">Waiting for events…</div>';
+      }
+      return;
+    }
+    let rows = '';
+    for (const evt of state.liveEvents) {
+      const style = LIVE_EVENT_STYLE[evt.event_type] || { color: COLORS.idle, label: '?' };
+      rows += '<div class="event-row" style="display:grid;grid-template-columns:60px 80px 1fr;gap:10px;padding:4px 0;border-bottom:1px solid #1d274740;">' +
+              '<div class="event-row__time" style="color:#4a5475;font-family:monospace;">' + fmtLiveTime_(evt.timestamp) + '</div>' +
+              '<div class="event-row__agent" style="color:' + COLORS.infra + ';font-weight:600;font-family:monospace;">' + esc(evt.agent_id) + '</div>' +
+              '<div class="event-row__type" style="font-family:monospace;">' +
+                '<span style="background:' + style.color + '30;color:' + style.color + ';padding:1px 6px;border-radius:3px;font-size:9pt;margin-right:6px;">' + style.label + '</span>' +
+                esc(evt.event_type.replace('agent.','').replace('system.','')) + ' · ' + renderLivePayload_(evt) +
+              '</div></div>';
+    }
+    stream.innerHTML = rows;
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  function updateLiveAgents_(msgs) {
+    // simple status update shown in agent column when no events yet
+    const agentsBox = $('live-agents');
+    if (agentsBox && state.liveEvents.length === 0) {
+      agentsBox.innerHTML = '<div class="empty-state">' + esc(msgs.join(' · ')) + '</div>';
+    }
+  }
+
+  // Patch switchTab to start/stop Live EventSource
+  const _origSwitchTab = switchTab;
+  switchTab = function(name, tabEl) {
+    _origSwitchTab(name, tabEl);
+    if (name === 'live') {
+      startLiveTab();
+    } else {
+      stopLiveTab();
+    }
+  };
+  window.switchTab = switchTab;
+
+  // Refresh live agent "active" dots every 2s when on Live tab
+  setInterval(() => {
+    if (state.liveEventSource) renderLiveTab_();
+  }, 2000);
+
   // ── Public API ─────────────────────────────────────────────
   window.selectAgent = selectAgent;
   window.clearInspector = clearInspector;

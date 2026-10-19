@@ -1,0 +1,4 @@
+# Phase 1.5 bridge dependencies
+# Target: Python 3.14 (also runs on 3.11+ for dev)
+aiohttp>=3.10
+websockets>=13.0

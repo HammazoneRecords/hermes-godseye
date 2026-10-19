@@ -1,0 +1,44 @@
+# Hermes plugin: gods-eye
+# Lives at ~/.hermes/plugins/gods-eye/ per Phase 2 Cockpit Plan §5.3.
+# This plugin pushes normalized hook events to the gods-eye-bridge HTTP
+# endpoint at http://127.0.0.1:8765/api/bridge/hooks.
+#
+# Hook callbacks registered (per §5.3):
+#   on_session_start, on_session_end,
+#   subagent_start, subagent_stop,
+#   pre_tool_call, post_tool_call,
+#   on_skill_lifecycle
+
+name: gods-eye
+version: 1.0.0
+description: Pushes runtime hook events to the Godseye dashboard bridge.
+author: Ovando Brown (Hermes default profile, TRIS-coordinated)
+license: MIT
+
+# Where to push events. Override via GODS_EYE_BRIDGE_URL env var.
+bridge_url: ${GODS_EYE_BRIDGE_URL:-http://127.0.0.1:8765/api/bridge/hooks}
+
+hooks:
+  - on_session_start
+  - on_session_end
+  - on_session_finalize
+  - subagent_start
+  - subagent_stop
+  - pre_tool_call
+  - post_tool_call
+  - on_skill_lifecycle
+  - on_room_member_activity
+
+config:
+  # Strip these keys from payloads before pushing (never let secrets cross).
+  redact_keys:
+    - api_key
+    - authorization
+    - cookie
+    - "*_api_key"
+    - password
+    - token
+  # Hard cap on payload size sent to the bridge.
+  max_payload_chars: 50000
+  # Drop message bodies — only send delta counts (no Pluto→Earth leak).
+  strip_message_bodies: true

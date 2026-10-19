@@ -1,0 +1,33 @@
+{
+  "name": "godseye-v2",
+  "private": true,
+  "version": "2.0.0-phase2",
+  "type": "module",
+  "description": "Godseye × HermesSPL — Phase 2 3D Knowledge Globe Cockpit. React 19 + CesiumJS 1.139 + Zustand 5 + Tailwind 4. Ported from 01_reference_godseye/godseye/ patterns.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5173"
+  },
+  "dependencies": {
+    "cesium": "^1.139.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "resium": "^1.18.0",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0",
+    "vite": "^7.0.0",
+    "vite-plugin-cesium": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

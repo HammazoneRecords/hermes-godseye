@@ -703,3 +703,79 @@ body {
   .gov-cards { grid-template-columns: repeat(2, 1fr); }
   .violation-policy { flex-direction: column; }
 }
+
+
+/* ── Live tab (Phase 1.5 — SSE stream) ───────────────────────── */
+.live-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 12px;
+  min-height: 380px;
+}
+.live-agents {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.live-agent {
+  background: #11172a;
+  border: 1px solid #243352;
+  border-left: 3px solid #9aa6b7;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 10pt;
+  transition: border-color .2s, background .2s;
+}
+.live-agent.is-active {
+  border-left-color: #ff69b4;
+  background: #161e36;
+}
+.live-agent__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.live-agent__id {
+  font-weight: 600;
+  font-family: monospace;
+}
+.live-agent__count {
+  color: #ff69b4;
+  font-family: monospace;
+  font-size: 9pt;
+}
+.live-agent__pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4a5475;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.live-agent.is-active .live-agent__pulse {
+  background: #ff69b4;
+  animation: live-dot-pulse 1.4s infinite;
+}
+@keyframes live-dot-pulse {
+  0%   { box-shadow: 0 0 0 0 #ff69b4; }
+  100% { box-shadow: 0 0 0 6px transparent; }
+}
+.live-stream {
+  background: #11172a;
+  border: 1px solid #243352;
+  border-radius: 4px;
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 460px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10pt;
+}
+@media (max-width: 800px) {
+  .live-layout { grid-template-columns: 1fr; }
+  .live-agents { max-height: 180px; }
+  .live-stream { max-height: 280px; }
+}

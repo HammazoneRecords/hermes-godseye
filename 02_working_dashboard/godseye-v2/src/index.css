@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #0a0e1a;
+  color: #e9edf4;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Cesium overrides */
+.cesium-viewer-bottom,
+.cesium-widget-credits {
+  display: none !important;
+}
+
+.cesium-viewer-toolbar {
+  display: none !important;
+}
