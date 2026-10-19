@@ -952,7 +952,7 @@ async def sse_events_handler(request: web.Request) -> web.StreamResponse:
             agent_id="system", session_id="system", run_id="system",
             timestamp=time.time(), event_type="system.gateway_health",
             payload={"name": "gods-eye-bridge", "gateway_state": "ready",
-                     "active_agents": 0, "version": "1.5.0"},
+                     "active_agents": 0, "version": "1.6.0"},
         )
         await resp.write(hello.to_sse().encode("utf-8"))
         while True:
@@ -1010,15 +1010,29 @@ async def webhook_receiver_handler(request: web.Request) -> web.Response:
 
 
 async def health_handler(request: web.Request) -> web.Response:
+    mock_mode = request.app.get("mock_mode", False)
+    tq: TrajectoryQuery = request.app.get("trajectory_query")
+    session_count = len(tq.list_sessions()) if tq else 0
     return web.json_response({
         "ok": True,
         "service": "gods-eye-bridge",
-        "version": "1.5.0",
+        "version": "1.6.0",
         "hermes_base_url": HERMES_BASE_URL or "(mock mode)",
         "subscribers": len(request.app["bus"]._subs),
         "ring_size": len(request.app["bus"]._ring),
         "event_types": list(EVENT_TYPES.keys()),
         "color_coding": COLOR,
+        "endpoints": {
+            "sse_stream":     "GET /api/gods-eye/events",
+            "snapshot":       "GET /api/gods-eye/snapshot",
+            "health":         "GET /api/gods-eye/health",
+            "hooks":          "POST /api/bridge/hooks",
+            "webhooks":       "POST /api/bridge/webhooks",
+            "control":        "POST /api/gods-eye/control/{action} (Phase 4 stub)",
+            "trajectory":     "GET /api/gods-eye/trajectory (Phase 3 replay)",
+        },
+        "trajectory_sessions": session_count,
+        "mock_mode": mock_mode,
     })
 
 
@@ -1032,6 +1046,371 @@ async def control_handler(request: web.Request) -> web.Response:
         "reason": "Phase 4 — outbound control not yet implemented",
         "action": action,
     }, status=501)
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — Replay Mode: trajectory query endpoint + mock trajectory source
+# ---------------------------------------------------------------------------
+
+# Trajectory entry schema (ShareGPT-format-derived, body-stripped per
+# boundary rule). Each entry represents one past session the user can replay.
+#
+# On disk: ~/.hermes/trajectory_samples.jsonl (one JSON object per line, full
+# ShareGPT format with conversations[] containing role+value pairs).
+# Over the wire: only metadata crosses — role, length, tool name, decision
+# marker; never the message body text.
+
+
+def _strip_sharegpt_bodies(conversations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Strip message bodies from ShareGPT conversations list. Keeps only:
+    - role
+    - body length (chars)
+    - tool name (if applicable)
+    - args size (if applicable)
+    - decision marker (extracted from tags or approval events)
+    Per the no-Pluto-to-Earth boundary rule (even in replay mode, the
+    dashboard shows metadata; chat text stays in the JSONL on the host)."""
+    out = []
+    for turn in conversations:
+        if not isinstance(turn, dict):
+            continue
+        role = turn.get("from") or turn.get("role") or "unknown"
+        value = turn.get("value") or turn.get("content") or ""
+        body_len = len(str(value)) if value else 0
+        entry = {
+            "role": role,
+            "body_chars": body_len,
+            "weight": turn.get("weight", 0),
+        }
+        # extract tool metadata if present
+        if role == "tool":
+            entry["tool"] = turn.get("tool") or turn.get("name") or "unknown"
+            entry["args_size"] = len(str(turn.get("input", "")))
+            entry["ok"] = turn.get("ok", True)
+        # extract decision/feedback marker from tags or weight
+        if turn.get("weight", 0) > 0:
+            entry["decision"] = "accepted"
+        elif turn.get("rejected"):
+            entry["decision"] = "rejected"
+        out.append(entry)
+    return out
+
+
+def _parse_trajectory_entry(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert a raw JSONL trajectory entry to the body-stripped replay schema."""
+    convs = raw.get("conversations", []) or []
+    turns = _strip_sharegpt_bodies(convs)
+    # synthesize per-turn timestamps if absent (assume 2s spacing if not given)
+    base_ts = raw.get("timestamp") or raw.get("started_at") or time.time() - len(turns) * 2
+    events = []
+    for i, t in enumerate(turns):
+        ts = raw.get("turns", {}).get(str(i), {}).get("ts") if isinstance(raw.get("turns"), dict) else None
+        if ts is None:
+            ts = float(base_ts) + i * 2.0
+        events.append({
+            "ts": float(ts),
+            "turn": i,
+            "role": t["role"],
+            "body_chars": t["body_chars"],
+            "tool": t.get("tool"),
+            "args_size": t.get("args_size"),
+            "decision": t.get("decision"),
+            "ok": t.get("ok"),
+        })
+    return {
+        "id": raw.get("id") or raw.get("trajectory_id") or f"traj-{uuid.uuid4().hex[:8]}",
+        "agent_id": raw.get("agent_id") or "unknown",
+        "session_id": raw.get("session_id") or "unknown",
+        "run_id": raw.get("run_id") or "unknown",
+        "started_at": float(base_ts),
+        "ended_at": events[-1]["ts"] if events else float(base_ts),
+        "turn_count": len(events),
+        "tags": (raw.get("tags") or [])[:10],
+        "events": events,
+    }
+
+
+class MockTrajectorySource:
+    """Generates synthetic ShareGPT-format trajectory entries for demo / CI.
+
+    Produces a realistic mix of:
+    - agent message turns (role=gpt, body 200-400 chars)
+    - tool calls (role=tool, tool name + args size)
+    - human feedback (role=human, body 50-150 chars)
+    - corrections (role=human with weight=0)
+    - subagent dispatches (role=tool, tool=subagent.dispatch)
+
+    In mock mode, the bridge uses this store INSTEAD of the JSONL file.
+    The TrajectoryTail class still runs but won't find the file (mock mode
+    doesn't write to disk), so its memory.mutation events won't fire —
+    that's expected; replay data comes from this store via the endpoint.
+    """
+
+    def __init__(self, n_sessions: int = 6, seed: int = 42) -> None:
+        rng = random.Random(seed)
+        self._sessions: List[Dict[str, Any]] = []
+        for s_i in range(n_sessions):
+            agent = MOCK_AGENTS[rng.randrange(len(MOCK_AGENTS))][0]
+            started = time.time() - (s_i + 1) * 3600  # 1h ago, 2h ago, etc.
+            turn_count = rng.randint(6, 18)
+            convs = []
+            base_turns = []
+            # system turn
+            convs.append({"from": "system", "value": "..." * 50, "weight": 0})
+            base_turns.append({"ts": started})
+            # alternate human / gpt / tool turns
+            for t_i in range(turn_count - 1):
+                ts = started + (t_i + 1) * 2.0
+                choice = rng.random()
+                if choice < 0.30:
+                    convs.append({"from": "human", "value": "..." * rng.randint(50, 150),
+                                  "weight": 1 if rng.random() < 0.8 else 0})
+                    base_turns.append({"ts": ts, "decision": "accepted" if convs[-1]["weight"] else "rejected"})
+                elif choice < 0.65:
+                    convs.append({"from": "gpt", "value": "..." * rng.randint(120, 320), "weight": 1})
+                    base_turns.append({"ts": ts})
+                else:
+                    tool = rng.choice(MOCK_TOOLS)
+                    ok = rng.random() < 0.92
+                    convs.append({"from": "tool", "value": "..." * rng.randint(40, 200),
+                                  "tool": tool, "input": "x" * rng.randint(20, 600),
+                                  "ok": ok, "weight": 0})
+                    base_turns.append({"ts": ts, "tool": tool, "ok": ok})
+            raw = {
+                "id": f"mock-traj-{s_i:03d}",
+                "agent_id": agent,
+                "session_id": f"mock-sess-{s_i:03d}",
+                "run_id": f"mock-run-{s_i:03d}",
+                "timestamp": started,
+                "tags": [rng.choice(MOCK_SKILLS), f"phase3-replay", agent.lower()],
+                "conversations": convs,
+                "turns": {str(i): t for i, t in enumerate(base_turns)},
+            }
+            self._sessions.append(_parse_trajectory_entry(raw))
+
+    def list_sessions(self) -> List[Dict[str, Any]]:
+        """Return session summaries (no per-event detail)."""
+        return [
+            {k: v for k, v in s.items() if k != "events"}
+            for s in self._sessions
+        ]
+
+    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        for s in self._sessions:
+            if s["id"] == session_id or s["session_id"] == session_id:
+                return s
+        return None
+
+    def query(
+        self,
+        since: Optional[float] = None,
+        until: Optional[float] = None,
+        agent_id: Optional[str] = None,
+        limit: int = 1000,
+    ) -> List[Dict[str, Any]]:
+        """Time-bounded query across all mock sessions. Returns events list."""
+        out = []
+        for s in self._sessions:
+            if agent_id and s["agent_id"] != agent_id:
+                continue
+            for e in s["events"]:
+                if since and e["ts"] < since:
+                    continue
+                if until and e["ts"] > until:
+                    continue
+                out.append({
+                    "trajectory_id": s["id"],
+                    "agent_id": s["agent_id"],
+                    "session_id": s["session_id"],
+                    "run_id": s["run_id"],
+                    **e,
+                })
+                if len(out) >= limit:
+                    return out
+        return out
+
+
+class TrajectoryQuery:
+    """Reads ~/.hermes/trajectory_samples.jsonl (real mode) or delegates to
+    MockTrajectorySource (mock mode). Provides the query surface for the
+    /api/gods-eye/trajectory endpoint."""
+
+    def __init__(self, path: str, mock_source: Optional[MockTrajectorySource] = None) -> None:
+        self.path = Path(path)
+        self.mock_source = mock_source
+        self._cache: List[Dict[str, Any]] = []
+        self._cache_mtime: float = 0.0
+
+    def _load_real(self) -> List[Dict[str, Any]]:
+        """Load and parse the JSONL file. Cached by mtime."""
+        if not self.path.exists():
+            return []
+        try:
+            mtime = self.path.stat().st_mtime
+        except OSError:
+            return []
+        if mtime == self._cache_mtime and self._cache:
+            return self._cache
+        out = []
+        try:
+            with self.path.open("r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        raw = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    out.append(_parse_trajectory_entry(raw))
+        except Exception as e:
+            log.warning("trajectory query: file read error: %s", e)
+            return self._cache
+        self._cache = out
+        self._cache_mtime = mtime
+        return out
+
+    def list_sessions(self) -> List[Dict[str, Any]]:
+        if self.mock_source is not None:
+            return self.mock_source.list_sessions()
+        return [{k: v for k, v in s.items() if k != "events"} for s in self._load_real()]
+
+    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        if self.mock_source is not None:
+            return self.mock_source.get_session(session_id)
+        for s in self._load_real():
+            if s["id"] == session_id or s["session_id"] == session_id:
+                return s
+        return None
+
+    def query(
+        self,
+        since: Optional[float] = None,
+        until: Optional[float] = None,
+        session_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        limit: int = 1000,
+    ) -> List[Dict[str, Any]]:
+        # session_id filter — return that session's events only
+        if session_id:
+            s = self.get_session(session_id)
+            if not s:
+                return []
+            events = []
+            for e in s["events"]:
+                if since and e["ts"] < since:
+                    continue
+                if until and e["ts"] > until:
+                    continue
+                events.append({
+                    "trajectory_id": s["id"],
+                    "agent_id": s["agent_id"],
+                    "session_id": s["session_id"],
+                    "run_id": s["run_id"],
+                    **e,
+                })
+                if len(events) >= limit:
+                    break
+            return events
+        # time-bounded cross-session query
+        if self.mock_source is not None:
+            return self.mock_source.query(since=since, until=until, agent_id=agent_id, limit=limit)
+        out = []
+        for s in self._load_real():
+            if agent_id and s["agent_id"] != agent_id:
+                continue
+            for e in s["events"]:
+                if since and e["ts"] < since:
+                    continue
+                if until and e["ts"] > until:
+                    continue
+                out.append({
+                    "trajectory_id": s["id"],
+                    "agent_id": s["agent_id"],
+                    "session_id": s["session_id"],
+                    "run_id": s["run_id"],
+                    **e,
+                })
+                if len(out) >= limit:
+                    return out
+        return out
+
+
+async def trajectory_handler(request: web.Request) -> web.Response:
+    """GET /api/gods-eye/trajectory — Phase 3 Replay Mode.
+
+    Query params (all optional):
+      session_id=<id>     — return events for one session only
+      since=<epoch>       — lower timestamp bound
+      until=<epoch>       — upper timestamp bound
+      agent_id=<id>       — filter by agent
+      limit=<n>           — cap on returned events (default 1000, max 10000)
+      summary=1           — return only session summaries, not events
+
+    Returns JSON list. Each event has: ts, turn, role, body_chars, tool?,
+    args_size?, decision?, ok?, trajectory_id, agent_id, session_id, run_id.
+    Message bodies are STRIPPED per the boundary rule — only metadata crosses.
+    """
+    tq: TrajectoryQuery = request.app["trajectory_query"]
+    args = request.query
+    summary = args.get("summary") in ("1", "true", "yes")
+    if summary and not args.get("session_id"):
+        return web.json_response({
+            "sessions": tq.list_sessions(),
+            "mode": "mock" if request.app["mock_mode"] else "live",
+        }, headers={"Access-Control-Allow-Origin": "*",
+                     "Cache-Control": "no-cache"})
+
+    try:
+        since = float(args["since"]) if "since" in args else None
+    except (ValueError, TypeError):
+        return web.json_response({"error": "invalid since"}, status=400)
+    try:
+        until = float(args["until"]) if "until" in args else None
+    except (ValueError, TypeError):
+        return web.json_response({"error": "invalid until"}, status=400)
+    session_id = args.get("session_id")
+    agent_id = args.get("agent_id")
+    try:
+        limit = min(int(args.get("limit", "1000")), 10000)
+    except ValueError:
+        return web.json_response({"error": "invalid limit"}, status=400)
+
+    if session_id:
+        # full session detail
+        s = tq.get_session(session_id)
+        if not s:
+            return web.json_response({"error": "session not found", "session_id": session_id}, status=404)
+        # filter events by time window if provided
+        events = []
+        for e in s["events"]:
+            if since and e["ts"] < since: continue
+            if until and e["ts"] > until: continue
+            events.append({
+                "trajectory_id": s["id"],
+                "agent_id": s["agent_id"],
+                "session_id": s["session_id"],
+                "run_id": s["run_id"],
+                **e,
+            })
+        return web.json_response({
+            "session": {k: v for k, v in s.items() if k != "events"},
+            "events": events,
+            "mode": "mock" if request.app["mock_mode"] else "live",
+        }, headers={"Access-Control-Allow-Origin": "*",
+                     "Cache-Control": "no-cache"})
+
+    events = tq.query(since=since, until=until, session_id=None, agent_id=agent_id, limit=limit)
+    return web.json_response({
+        "events": events,
+        "count": len(events),
+        "since": since,
+        "until": until,
+        "agent_id": agent_id,
+        "mode": "mock" if request.app["mock_mode"] else "live",
+    }, headers={"Access-Control-Allow-Origin": "*",
+                 "Cache-Control": "no-cache"})
+
 
 
 # ---------------------------------------------------------------------------
@@ -1080,6 +1459,7 @@ async def app_factory(args: argparse.Namespace) -> web.Application:
     app.router.add_post("/api/bridge/hooks", hook_receiver_handler)
     app.router.add_post("/api/bridge/webhooks", webhook_receiver_handler)
     app.router.add_post("/api/gods-eye/control/{action}", control_handler)
+    app.router.add_get("/api/gods-eye/trajectory", trajectory_handler)
 
     # also serve the dashboard itself for one-stop demo
     dashboard_dir = DASHBOARD_DATA_DIR.parent
@@ -1093,11 +1473,19 @@ async def app_factory(args: argparse.Namespace) -> web.Application:
     if args.mock or not HERMES_BASE_URL:
         log.warning("=== MOCK MODE ===  HERMES_BASE_URL not set; using MockEventSource")
         sources.append(MockEventSource(bus, rate=args.mock_rate).run())
+        # Phase 3: in mock mode, the trajectory endpoint serves from a mock store
+        mock_traj = MockTrajectorySource(n_sessions=args.mock_trajectories)
+        app["mock_mode"] = True
     else:
         sources.append(SSESubscriberPool(HERMES_BASE_URL, HERMES_API_KEY, bus).run())
         if HERMES_DASHBOARD_WS:
             sources.append(WSSubscriber(HERMES_DASHBOARD_WS, bus).run())
         sources.append(MonitoringPoller(HERMES_BASE_URL, HERMES_API_KEY, bus).run())
+        mock_traj = None
+        app["mock_mode"] = False
+    # Phase 3: trajectory query store — uses MockTrajectorySource in mock mode,
+    # reads ~/.hermes/trajectory_samples.jsonl in live mode.
+    app["trajectory_query"] = TrajectoryQuery(HERMES_TRAJECTORY_PATH, mock_source=mock_traj)
 
     # trajectory tail runs in both modes (file may or may not exist)
     sources.append(TrajectoryTail(HERMES_TRAJECTORY_PATH, bus).run())
@@ -1132,6 +1520,8 @@ def parse_args() -> argparse.Namespace:
                    help="Run in mock mode (generate fake events; ignore HERMES_BASE_URL)")
     p.add_argument("--mock-rate", type=float, default=1.5,
                    help="Mock event rate (events/sec)")
+    p.add_argument("--mock-trajectories", type=int, default=6,
+                   help="Number of synthetic trajectory sessions to generate in mock mode")
     return p.parse_args()
 
 
@@ -1167,6 +1557,7 @@ def main() -> None:
     log.info("  health: GET  /api/gods-eye/health")
     log.info("  hooks:  POST /api/bridge/hooks")
     log.info("  webhk:  POST /api/bridge/webhooks")
+    log.info("  traj:   GET  /api/gods-eye/trajectory")
 
     try:
         loop.run_until_complete(stop.wait())
